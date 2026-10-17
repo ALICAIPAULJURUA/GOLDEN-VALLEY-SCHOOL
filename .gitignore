@@ -1,0 +1,8 @@
+node_modules/
+dist/
+storage/
+.env
+.env.*
+!.env.example
+media/tinymce/
+npm-debug.log*
