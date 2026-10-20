@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Editor } from '@tinymce/tinymce-react';
-import { apiRequest, formatDate, schoolGreeting } from './api.js';
+import { apiRequest, formatDate, mediaUrl, schoolGreeting } from './api.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import { showToast } from './notifications.js';
 import {
@@ -130,7 +130,7 @@ function PostEditor({ post, onSave, onCancel, busy, error, csrfToken, media, onU
       <label>Location<input maxLength="200" value={draft.eventLocation || ''} onChange={(event) => update('eventLocation', event.target.value)} /></label>
       <label>Registration link <span>(optional)</span><input type="url" value={draft.eventRegistrationUrl || ''} onChange={(event) => update('eventRegistrationUrl', event.target.value)} placeholder="https://" /></label>
     </div>}
-    <label>Feature image from media library<select value={draft.featuredImage || ''} onChange={(event) => update('featuredImage', event.target.value)}><option value="">No feature image</option>{media.map((item) => <option value={`/uploads/${item.filename}`} key={item.id}>{item.altText || item.originalName}</option>)}</select></label>
+    <label>Feature image from media library<select value={draft.featuredImage || ''} onChange={(event) => update('featuredImage', event.target.value)}><option value="">No feature image</option>{media.map((item) => <option value={mediaUrl(item)} key={item.id}>{item.altText || item.originalName}</option>)}</select></label>
     <ImageUploadField label="Or upload a feature image" value={draft.featuredImage || ''} onChange={(value) => update('featuredImage', value)} onUploadImage={onUploadImage} altText={draft.title} />
     {draft.featuredImage && <img className="gv-admin-feature-preview" src={draft.featuredImage} alt="Selected feature image preview" />}
     <label>Article content</label>
@@ -312,6 +312,16 @@ export default function Admin() {
     }
   }
 
+  async function viewPreviousResults(id) {
+    const downloadWindow = window.open('about:blank', '_blank');
+    if (!downloadWindow) {
+      showToast('Allow pop-ups to open the applicant’s private results file.', 'error');
+      return;
+    }
+    downloadWindow.opener = null;
+    downloadWindow.location.href = `/api/admin/admissions/${id}/results`;
+  }
+
   async function savePost(post) {
     setSaving(true);
     setError('');
@@ -371,7 +381,7 @@ export default function Admin() {
 
   async function uploadContentImage(file, altText) {
     const uploaded = await uploadMedia(file, altText, false);
-    return `/uploads/${uploaded.filename}`;
+    return mediaUrl(uploaded);
   }
 
   async function uploadSiteIcon(file) {
@@ -566,7 +576,7 @@ export default function Admin() {
           {error && <p className="gv-admin-error gv-admin-page-error" role="alert">{error}</p>}
           {tab === 'messages' && messageError && <p className="gv-admin-error gv-admin-page-error" role="alert">{messageError}</p>}
           {loading ? <LoadingSpinner message="Loading the school office…" /> :
-            tab === 'admissions' ? <AdmissionList admissions={admissions} onStatusChange={updateStatus} />
+            tab === 'admissions' ? <AdmissionList admissions={admissions} onStatusChange={updateStatus} onViewResults={viewPreviousResults} />
               : tab === 'messages' ? <MessageManager messages={messages} onMarkRead={markMessageRead} onReply={replyToMessage} onDelete={deleteMessage} />
                 : tab === 'comments' ? <CommentManager comments={comments} onUpdate={updateComment} onDelete={deleteComment} />
               : (tab === 'posts' || tab === 'events') ? (editing
@@ -585,10 +595,10 @@ export default function Admin() {
   </main>;
 }
 
-function AdmissionList({ admissions, onStatusChange }) {
+function AdmissionList({ admissions, onStatusChange, onViewResults }) {
   if (!admissions.length) return <div className="gv-admin-empty"><span>✳</span><h2>No applications just yet.</h2><p>New online applications will appear here when families submit the form.</p></div>;
   return <div className="gv-admin-table-wrap"><table className="gv-admin-table"><thead><tr><th>Applicant</th><th>Class</th><th>Parent / guardian</th><th>Contact</th><th>Previous results</th><th>Received</th><th>Status</th></tr></thead><tbody>
-    {admissions.map((application) => <tr key={application.id}><td><strong>{application.studentName}</strong><small>{application.reference} · born {formatDate(application.dateOfBirth)}</small></td><td>{classLabels[application.classApplied] || application.classApplied}</td><td>{application.parentName}<small>{application.relationship}</small></td><td><a href={`tel:${application.phone}`}>{application.phone}</a>{application.email && <small>{application.email}</small>}</td><td>{application.hasPreviousResults ? <a href={`/api/admin/admissions/${application.id}/results`} target="_blank" rel="noreferrer">{application.previousResultsName || 'View file'} ↗</a> : '—'}</td><td>{formatDate(application.createdAt)}</td><td><select className={`gv-admin-status is-${application.status}`} aria-label={`Application status for ${application.studentName}`} value={application.status} onChange={(event) => onStatusChange(application.id, event.target.value)}>{admissionStatuses.map((status) => <option value={status} key={status}>{status.replace('_', ' ')}</option>)}</select></td></tr>)}
+    {admissions.map((application) => <tr key={application.id}><td><strong>{application.studentName}</strong><small>{application.reference} · born {formatDate(application.dateOfBirth)}</small></td><td>{classLabels[application.classApplied] || application.classApplied}</td><td>{application.parentName}<small>{application.relationship}</small></td><td><a href={`tel:${application.phone}`}>{application.phone}</a>{application.email && <small>{application.email}</small>}</td><td>{application.hasPreviousResults ? <a href={`/api/admin/admissions/${application.id}/results`} onClick={(event) => { event.preventDefault(); onViewResults(application.id); }}>{application.previousResultsName || 'View file'} ↗</a> : '—'}</td><td>{formatDate(application.createdAt)}</td><td><select className={`gv-admin-status is-${application.status}`} aria-label={`Application status for ${application.studentName}`} value={application.status} onChange={(event) => onStatusChange(application.id, event.target.value)}>{admissionStatuses.map((status) => <option value={status} key={status}>{status.replace('_', ' ')}</option>)}</select></td></tr>)}
   </tbody></table></div>;
 }
 
@@ -712,7 +722,7 @@ function ImageUploadField({ label, value, onChange, onUploadImage, altText }) {
 
   return <div className="gv-admin-image-upload">
     <label>{label}<input type="file" accept="image/jpeg,image/png,image/gif,image/webp" disabled={busy} onChange={upload} /></label>
-    <small>JPG, PNG, GIF, or WebP · up to 8 MB. {busy ? 'Uploading image…' : value ? 'The new upload is now selected.' : 'Choose an image from your device.'}</small>
+    <small>JPG, PNG, GIF, or WebP · up to 4 MB. {busy ? 'Uploading image…' : value ? 'The new upload is now selected.' : 'Choose an image from your device.'}</small>
     {error && <p className="gv-admin-error" role="alert">{error}</p>}
   </div>;
 }
@@ -738,7 +748,7 @@ function SiteIconField({ label, value, media, onChange, onUploadIcon }) {
   }
 
   return <div className="gv-admin-site-icon-field">
-    <label>{label}<select value={value || ''} onChange={(event) => onChange(event.target.value)}><option value="">Use the Golden Valley default</option>{media.map((item) => <option key={item.id} value={`/uploads/${item.filename}`}>{item.altText || item.originalName}</option>)}</select></label>
+    <label>{label}<select value={value || ''} onChange={(event) => onChange(event.target.value)}><option value="">Use the Golden Valley default</option>{media.map((item) => <option key={item.id} value={mediaUrl(item)}>{item.altText || item.originalName}</option>)}</select></label>
     <label>Or upload a PNG, GIF, or WebP icon<input type="file" accept="image/png,image/gif,image/webp" disabled={busy} onChange={upload} /></label>
     {value && <img src={value} alt={`${label} preview`} />}
     {busy && <small>Uploading icon…</small>}
@@ -765,7 +775,7 @@ function SiteImageField({ label, fallbackName, value, media, onChange, onUploadI
     }
   }
   return <div className="gv-admin-site-image-field">
-    <label>{label}<select value={value || ''} onChange={(event) => onChange(event.target.value)}><option value="">Use default image ({fallbackName})</option>{media.map((item) => <option key={item.id} value={`/uploads/${item.filename}`}>{item.altText || item.originalName}</option>)}</select></label>
+    <label>{label}<select value={value || ''} onChange={(event) => onChange(event.target.value)}><option value="">Use default image ({fallbackName})</option>{media.map((item) => <option key={item.id} value={mediaUrl(item)}>{item.altText || item.originalName}</option>)}</select></label>
     <label>Or upload a replacement image<input type="file" accept="image/jpeg,image/png,image/gif,image/webp" disabled={busy} onChange={upload} /></label>
     <small>Default: {fallbackName}. Upload or choose an image in the media library to replace it on the public site.</small>
     {value && <img src={value} alt={`${label} preview`} />}
@@ -801,7 +811,7 @@ function StaffManager({ staff, media, onSave, onDelete, onUploadImage }) {
       <label>Name<input required maxLength="120" value={editing.name} onChange={(event) => setEditing({ ...editing, name: event.target.value })} /></label>
       <label>Position / title<input required maxLength="120" value={editing.role} onChange={(event) => setEditing({ ...editing, role: event.target.value })} /></label>
       <label>Short biography<textarea rows="3" maxLength="1000" value={editing.bio} onChange={(event) => setEditing({ ...editing, bio: event.target.value })} /></label>
-      <label>Profile image from media library<select value={editing.image} onChange={(event) => setEditing({ ...editing, image: event.target.value })}><option value="">Initials only</option>{media.map((item) => <option key={item.id} value={`/uploads/${item.filename}`}>{item.altText || item.originalName}</option>)}</select></label>
+      <label>Profile image from media library<select value={editing.image} onChange={(event) => setEditing({ ...editing, image: event.target.value })}><option value="">Initials only</option>{media.map((item) => <option key={item.id} value={mediaUrl(item)}>{item.altText || item.originalName}</option>)}</select></label>
       <ImageUploadField label="Or upload a profile image" value={editing.image} onChange={(image) => setEditing({ ...editing, image })} onUploadImage={onUploadImage} altText={editing.name} />
       <div className="gv-admin-inline-fields"><label>Display order<input type="number" min="0" value={editing.displayOrder} onChange={(event) => setEditing({ ...editing, displayOrder: Number(event.target.value) })} /></label><label className="gv-admin-check"><input type="checkbox" checked={Boolean(editing.leadership)} onChange={(event) => setEditing({ ...editing, leadership: event.target.checked })} /> School leadership (show first)</label><label className="gv-admin-check"><input type="checkbox" checked={Boolean(editing.published)} onChange={(event) => setEditing({ ...editing, published: event.target.checked })} /> Visible on school website</label></div>
       {error && <p className="gv-admin-error" role="alert">{error}</p>}
@@ -844,7 +854,7 @@ function MediaManager({ media, onUpload, onUpdate, onDelete }) {
   return <div className="gv-admin-management">
     <form className="gv-admin-upload" onSubmit={submit}>
       <h2>Add images to your media library</h2>
-      <p>JPG, PNG, GIF, or WebP · up to 8 MB. Images marked for the gallery appear on the public website.</p>
+      <p>JPG, PNG, GIF, or WebP · up to 4 MB. Images marked for the gallery appear on the public website.</p>
       <label>Image file<input required type="file" accept="image/jpeg,image/png,image/gif,image/webp" onChange={(event) => setFile(event.target.files?.[0] || null)} /></label>
       <label>Image description / alt text<input maxLength="300" value={altText} onChange={(event) => setAltText(event.target.value)} placeholder="Describe this image for accessibility" /></label>
       <label className="gv-admin-check"><input type="checkbox" checked={galleryVisible} onChange={(event) => setGalleryVisible(event.target.checked)} /> Display in public school gallery</label>
@@ -852,7 +862,7 @@ function MediaManager({ media, onUpload, onUpdate, onDelete }) {
       <button className="gv-button" disabled={busy || !file}>{busy ? 'Uploading…' : 'Upload image'}</button>
     </form>
     {!media.length ? <div className="gv-admin-empty"><h2>Your media library is empty.</h2><p>Upload school photos to use them in news, events, staff profiles, and site settings.</p></div> : <div className="gv-admin-media-grid">{media.map((item) => <article key={item.id} className="gv-admin-media-card">
-      <img src={`/uploads/${item.filename}`} alt={item.altText || item.originalName} />
+      <img src={mediaUrl(item)} alt={item.altText || item.originalName} />
       <div><strong>{item.originalName}</strong><small>{Math.max(1, Math.round(item.size / 1024))} KB</small>
         <form className="gv-admin-media-description" onSubmit={(event) => { event.preventDefault(); onUpdate(item, { altText: descriptions[item.id] ?? item.altText ?? '', galleryVisible: Boolean(item.galleryVisible) }).catch((requestError) => { setError(requestError.message); showToast(requestError.message, 'error'); }); }}>
           <label>Image description<input maxLength="300" value={descriptions[item.id] ?? item.altText ?? ''} onChange={(event) => setDescriptions({ ...descriptions, [item.id]: event.target.value })} /></label>

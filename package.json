@@ -7,8 +7,13 @@
     "dev": "vite",
     "build": "vite build",
     "start": "node server/index.js",
+    "start:mongo": "node server/mongo-local.js",
     "admin:create": "node scripts/create-admin.js",
+    "admin:mongo:create": "node scripts/create-mongo-admin.js",
     "test": "node --test tests"
+  },
+  "engines": {
+    "node": ">=22.12"
   },
   "dependencies": {
     "@tinymce/tinymce-react": "^6.3.0",
@@ -18,6 +23,7 @@
     "express": "^5.1.0",
     "express-rate-limit": "^8.1.0",
     "helmet": "^8.1.0",
+    "mongodb": "^6.17.0",
     "multer": "^2.4.0",
     "nodemailer": "^10.1.2",
     "react": "^19.1.0",

@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { schoolGreeting } from '../api.js';
+import { apiRequest, mediaUrl, schoolGreeting } from '../api.js';
+import mongoApi from '../api/[...path].js';
 import { cleanEditorHtml, toSlug } from '../server/content.js';
+import { getMongoConfig, MongoConfigurationError } from '../server/mongodb.js';
 import { hasValidCsrfToken } from '../server/session.js';
 import {
   accountPasswordSchema,
@@ -188,7 +190,7 @@ test('article comments require bounded text and moderator approval states', () =
   assert.equal(articleCommentStatusSchema.safeParse({ status: 'rejected' }).success, false);
 });
 
-test('site image settings accept uploaded media paths and reject external image URLs', () => {
+test('site image settings accept local and GridFS uploads and reject external URLs', () => {
   const result = settingsSchema.safeParse({
     schoolName: 'Golden Valley', tagline: 'Growing together', phone: '0777 627 421',
     email: 'school@example.test', whatsappNumber: '256777627421', applicationsOpen: true,
@@ -199,8 +201,107 @@ test('site image settings accept uploaded media paths and reject external image 
   assert.equal(settingsSchema.safeParse({
     schoolName: 'Golden Valley', tagline: 'Growing together', phone: '0777 627 421',
     email: 'school@example.test', whatsappNumber: '256777627421', applicationsOpen: true,
+    faviconUrl: '/uploads/507f1f77bcf86cd799439011',
+  }).success, true);
+  assert.equal(settingsSchema.safeParse({
+    schoolName: 'Golden Valley', tagline: 'Growing together', phone: '0777 627 421',
+    email: 'school@example.test', whatsappNumber: '256777627421', applicationsOpen: true,
     siteImages: { ...DEFAULT_SITE_IMAGES, heroClassroom: 'https://example.test/school.jpg' },
   }).success, false);
+});
+
+test('media URLs support local SQLite filenames and absolute media URLs', () => {
+  assert.equal(mediaUrl({ filename: 'school-crest.png' }), '/uploads/school-crest.png');
+  assert.equal(mediaUrl({ filename: 'https://example.test/image/crest.png' }),
+    'https://example.test/image/crest.png');
+  assert.equal(mediaUrl({ url: 'https://example.test/image/crest.png' }),
+    'https://example.test/image/crest.png');
+});
+
+test('MongoDB configuration requires an explicit database and validates pool size', () => {
+  assert.deepEqual(getMongoConfig({
+    MONGODB_URI: 'mongodb://localhost:27017/from-uri',
+    MONGODB_DB: 'golden_valley_school',
+  }), {
+    uri: 'mongodb://localhost:27017/from-uri',
+    databaseName: 'golden_valley_school',
+    maxPoolSize: 5,
+  });
+  assert.throws(() => getMongoConfig({
+    MONGODB_URI: 'mongodb://localhost:27017/from-uri',
+  }), (error) => error instanceof MongoConfigurationError && /MONGODB_DB/.test(error.message));
+  assert.throws(() => getMongoConfig({
+    MONGODB_URI: 'mongodb://localhost:27017/from-uri',
+    MONGODB_DB: 'school',
+    MONGODB_MAX_POOL_SIZE: '0',
+  }), (error) => error instanceof MongoConfigurationError && /MONGODB_MAX_POOL_SIZE/.test(error.message));
+});
+
+test('API client turns non-JSON platform errors and network failures into useful messages', async () => {
+  const originalFetch = globalThis.fetch;
+  try {
+    globalThis.fetch = async () => new Response('NOT_FOUND', {
+      status: 404,
+      headers: { 'Content-Type': 'text/plain' },
+    });
+    await assert.rejects(apiRequest('/api/health'), /school service endpoint is unavailable/i);
+
+    globalThis.fetch = async () => { throw new TypeError('network details are not shown'); };
+    await assert.rejects(apiRequest('/api/health'), /unable to reach the school service/i);
+
+    globalThis.fetch = async () => new Response(JSON.stringify({ error: 'Check the Atlas network access settings.' }), {
+      status: 503,
+      headers: { 'Content-Type': 'application/json' },
+    });
+    await assert.rejects(apiRequest('/api/health'), /Atlas network access settings/i);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('Vercel Mongo API reports missing configuration without exposing sensitive details', async () => {
+  async function request(method, path) {
+    const state = { statusCode: 200, body: null };
+    const response = {
+      setHeader() {},
+      status(code) { state.statusCode = code; return this; },
+      json(body) { state.body = body; return this; },
+      end() { return this; },
+      redirect(code, location) { state.statusCode = code; state.location = location; return this; },
+    };
+    await mongoApi({ method, url: path, headers: {} }, response);
+    return state;
+  }
+  const required = [
+    'MONGODB_URI', 'MONGODB_DB', 'MONGODB_MAX_POOL_SIZE', 'SESSION_SECRET',
+  ];
+  const previous = Object.fromEntries(required.map((key) => [key, process.env[key]]));
+  required.forEach((key) => { delete process.env[key]; });
+  let health;
+  const results = [];
+  try {
+    health = await request('GET', '/api/health');
+    for (const [method, path] of [
+      ['GET', '/api/admin/session'],
+      ['POST', '/api/admin/login'],
+      ['POST', '/api/messages'],
+      ['PATCH', '/api/admin/admissions/507f1f77bcf86cd799439011'],
+    ]) {
+      results.push(await request(method, path));
+    }
+  } finally {
+    required.forEach((key) => {
+      if (previous[key] === undefined) delete process.env[key];
+      else process.env[key] = previous[key];
+    });
+  }
+  assert.equal(health.statusCode, 503);
+  assert.equal(health.body.status, 'error');
+  for (const result of results) {
+    assert.equal(result.statusCode, 503);
+    assert.match(result.body.error, /MONGODB_URI/i);
+    assert.doesNotMatch(JSON.stringify(result.body), /mongodb\+srv|password|username/i);
+  }
 });
 
 test('contact message and reply validation enforce safe sender details and message sizes', () => {

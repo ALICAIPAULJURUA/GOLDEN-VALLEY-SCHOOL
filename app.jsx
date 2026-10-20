@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { createRoot } from 'react-dom/client';
 import Admin from './Admin.jsx';
-import { apiRequest, formatDate, whatsappUrl } from './api.js';
+import { apiRequest, formatDate, mediaUrl, whatsappUrl } from './api.js';
 import LoadingSpinner from './LoadingSpinner.jsx';
 import {
   DEFAULT_SITE_COLORS,
@@ -403,7 +403,7 @@ function AdmissionPage({ content, theme }) {
             <label>Child’s full name<input required maxLength="120" autoComplete="name" value={form.studentName} onChange={(event) => update('studentName', event.target.value)} /></label>
             <div className="gv-admission-fields"><label>Date of birth<input required type="date" max={new Date().toISOString().slice(0, 10)} value={form.dateOfBirth} onChange={(event) => update('dateOfBirth', event.target.value)} /></label><label>Class applying for<select required value={form.classApplied} onChange={(event) => update('classApplied', event.target.value)}><option value="">Choose a class</option>{classOptions.map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label></div>
             <div className="gv-admission-fields"><label>Gender<select required value={form.gender} onChange={(event) => update('gender', event.target.value)}><option value="">Choose an option</option><option value="female">Female</option><option value="male">Male</option><option value="prefer_not_to_say">Prefer not to say</option></select></label><label>Previous school <span>(if applicable)</span><input maxLength="150" value={form.previousSchool} onChange={(event) => { update('previousSchool', event.target.value); if (!event.target.value.trim()) setResultsFile(null); }} /></label></div>
-            {form.previousSchool.trim() && <label>Upload previous-school results <span>(optional · PDF, JPG, PNG · up to 5 MB)</span><input type="file" accept="application/pdf,image/jpeg,image/png" onChange={(event) => setResultsFile(event.target.files?.[0] || null)} /></label>}
+            {form.previousSchool.trim() && <label>Upload previous-school results <span>(optional · PDF, JPG, PNG · up to 4 MB)</span><input type="file" accept="application/pdf,image/jpeg,image/png" onChange={(event) => setResultsFile(event.target.files?.[0] || null)} /></label>}
             <h3 className="gv-form-section-heading">Parent or guardian</h3>
             <div className="gv-admission-fields"><label>Full name<input required maxLength="120" autoComplete="name" value={form.parentName} onChange={(event) => update('parentName', event.target.value)} /></label><label>Relationship<select required value={form.relationship} onChange={(event) => update('relationship', event.target.value)}><option value="">Choose an option</option><option value="mother">Mother</option><option value="father">Father</option><option value="guardian">Guardian</option><option value="other">Other</option></select></label></div>
             <div className="gv-admission-fields"><label>Phone number<input required type="tel" autoComplete="tel" maxLength="25" value={form.phone} onChange={(event) => update('phone', event.target.value)} placeholder="e.g. 0777 627 421" /></label><label>Email <span>(optional)</span><input type="email" autoComplete="email" maxLength="254" value={form.email} onChange={(event) => update('email', event.target.value)} /></label></div>
@@ -430,7 +430,7 @@ function Gallery() {
   useEffect(() => {
     apiRequest('/api/gallery')
       .then((result) => setUploaded(result.media.map((item) => ({
-        src: `/uploads/${item.filename}`,
+        src: mediaUrl(item),
         alt: item.altText || item.originalName,
         label: item.altText || item.originalName,
       }))))

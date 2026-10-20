@@ -4,5 +4,12 @@ storage/
 .env
 .env.*
 !.env.example
+.vercel/
+*.pem
+*.p12
+*.key
+credentials.json
+*service-account*.json
+*serviceAccount*.json
 media/tinymce/
 npm-debug.log*

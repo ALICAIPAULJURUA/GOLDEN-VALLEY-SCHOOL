@@ -54,7 +54,7 @@ export const articleCommentStatusSchema = z.object({
 const optionalText = (max) => z.string().trim().max(max).optional().default('');
 const optionalMediaPath = z.union([
   z.literal(''),
-  z.string().regex(/^\/uploads\/[a-z\d-]+\.(?:jpg|jpeg|png|gif|webp)$/i),
+  z.string().regex(/^\/uploads\/(?:[a-f\d]{24}|[a-z\d-]+\.(?:jpg|jpeg|png|gif|webp))$/i),
 ]).optional().default('');
 const optionalUrl = z.union([
   z.literal(''),
