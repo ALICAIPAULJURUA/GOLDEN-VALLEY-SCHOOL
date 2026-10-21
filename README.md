@@ -102,10 +102,10 @@ is not a replacement for your real restricted browser key.
 
 ## Deploy on Vercel
 
-The project builds the existing React site to `dist`. The `api/[...path].js`
+The project builds the existing React site to `dist`. The `api/index.js`
 serverless function runs the same Express API used for Mongo-backed local
-development. `vercel.json` sends uploaded-file URLs to the API and keeps the
-existing SPA fallback.
+development. `vercel.json` explicitly rewrites API and uploaded-file requests
+to this function before applying the existing SPA fallback.
 
 Add the following variables separately in Vercel **Project → Settings →
 Environment Variables**. Vercel does not read your local `.env` file:

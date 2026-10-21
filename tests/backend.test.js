@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { apiRequest, mediaUrl, schoolGreeting } from '../api.js';
-import mongoApi from '../api/[...path].js';
+import mongoApi, { normalizeVercelRequest } from '../api/index.js';
 import { cleanEditorHtml, toSlug } from '../server/content.js';
 import { getMongoConfig, MongoConfigurationError } from '../server/mongodb.js';
 import { hasValidCsrfToken } from '../server/session.js';
@@ -302,6 +302,20 @@ test('Vercel Mongo API reports missing configuration without exposing sensitive 
     assert.match(result.body.error, /MONGODB_URI/i);
     assert.doesNotMatch(JSON.stringify(result.body), /mongodb\+srv|password|username/i);
   }
+});
+
+test('Vercel API rewrites restore Express paths and preserve endpoint query parameters', () => {
+  const request = { url: '/api/index?_gv_route=posts&limit=10&type=news' };
+  assert.equal(normalizeVercelRequest(request), request);
+  assert.equal(request.url, '/api/posts?limit=10&type=news');
+
+  const uploadRequest = { url: '/api/index?_gv_route=uploads%2F507f1f77bcf86cd799439011' };
+  normalizeVercelRequest(uploadRequest);
+  assert.equal(uploadRequest.url, '/api/uploads/507f1f77bcf86cd799439011');
+
+  const directRequest = { url: '/api/admin/login' };
+  normalizeVercelRequest(directRequest);
+  assert.equal(directRequest.url, '/api/admin/login');
 });
 
 test('contact message and reply validation enforce safe sender details and message sizes', () => {

@@ -8,8 +8,12 @@
   },
   "rewrites": [
     {
-      "source": "/uploads/(.*)",
-      "destination": "/api/uploads/$1"
+      "source": "/api/:path*",
+      "destination": "/api/index?_gv_route=:path*"
+    },
+    {
+      "source": "/uploads/:path*",
+      "destination": "/api/index?_gv_route=uploads/:path*"
     },
     {
       "source": "/(.*)",
