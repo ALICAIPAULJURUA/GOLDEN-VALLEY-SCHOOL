@@ -844,7 +844,15 @@ export async function mongoApiHandler(req, res) {
     const mongo = await connectMongo();
     req.mongo = mongo;
   } catch (error) {
-    logDiagnostic('MongoDB connection failed.', error);
+    const details = {};
+    if (typeof error?.name === 'string') details.name = error.name;
+    if (typeof error?.message === 'string') details.message = error.message;
+    if (typeof error?.code === 'string' && /^[A-Z0-9_]{1,64}$/.test(error.code)) details.code = error.code;
+    else if (Number.isSafeInteger(error?.code)) details.code = error.code;
+    if (typeof error?.codeName === 'string' && /^[A-Za-z0-9_]{1,64}$/.test(error.codeName)) {
+      details.codeName = error.codeName;
+    }
+    console.error('MongoDB connection failed.', details);
     const message = databaseErrorMessage(error);
     res.status(503).json(req.url?.startsWith('/api/health')
       ? { status: 'error', backend: 'mongodb', error: message }
