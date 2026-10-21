@@ -82,9 +82,10 @@ const sampleArticles = [
   },
 ];
 
-function insertPost(post) {
+async function insertPost(post) {
   const slug = toSlug(post.title);
   if (get('SELECT id FROM posts WHERE slug = ?', [slug])) return;
+  const content = await cleanEditorHtml(post.content);
   run(
     `INSERT INTO posts
       (slug, type, title, summary, content, event_date, event_time, meta_title, meta_description, published)
@@ -94,7 +95,7 @@ function insertPost(post) {
       post.type,
       post.title,
       post.summary,
-      cleanEditorHtml(post.content),
+      content,
       post.eventDate ?? null,
       post.eventTime ?? '',
       post.metaTitle ?? '',
@@ -104,13 +105,13 @@ function insertPost(post) {
   );
 }
 
-export function seedPosts() {
+export async function seedPosts() {
   const count = get('SELECT COUNT(*) AS count FROM posts').count;
   const samplesSeeded = get('SELECT value FROM settings WHERE key = ?', ['sampleArticlesSeeded'])?.value === 'true';
   if (count === 0) {
-    for (const post of [...initialPosts, ...sampleArticles]) insertPost(post);
+    for (const post of [...initialPosts, ...sampleArticles]) await insertPost(post);
   } else if (!samplesSeeded) {
-    for (const post of sampleArticles) insertPost(post);
+    for (const post of sampleArticles) await insertPost(post);
   }
   if (!samplesSeeded) {
     run(

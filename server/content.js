@@ -1,5 +1,3 @@
-import sanitizeHtml from 'sanitize-html';
-
 const sanitizerOptions = {
   allowedTags: [
     'a', 'blockquote', 'br', 'code', 'del', 'em', 'figcaption', 'figure',
@@ -17,12 +15,21 @@ const sanitizerOptions = {
   allowedSchemes: ['http', 'https', 'mailto'],
   allowedIframeHostnames: ['www.youtube.com', 'www.youtube-nocookie.com', 'player.vimeo.com'],
   transformTags: {
-    a: sanitizeHtml.simpleTransform('a', { rel: 'noopener noreferrer' }, true),
+    a: (tagName, attribs) => ({
+      tagName,
+      attribs: { ...attribs, rel: 'noopener noreferrer' },
+    }),
   },
 };
 
-export function cleanEditorHtml(html) {
-  return sanitizeHtml(html, sanitizerOptions).trim();
+let sanitizeHtmlPromise;
+
+export async function cleanEditorHtml(html) {
+  if (!sanitizeHtmlPromise) {
+    const { default: sanitizeHtml } = await import('sanitize-html');
+    sanitizeHtmlPromise = sanitizeHtml;
+  }
+  return sanitizeHtmlPromise(html, sanitizerOptions).trim();
 }
 
 export function toSlug(title) {

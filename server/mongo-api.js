@@ -286,12 +286,13 @@ async function seedPosts(database) {
   ];
   const createdAt = now();
   try {
-    await posts.insertMany(samples.map(([type, title, summary, content, eventDate = '', eventTime = '', metaTitle = '', metaDescription = '']) => ({
-      slug: toSlug(title), type, title, summary, content: cleanEditorHtml(content),
+    const cleanedSamples = await Promise.all(samples.map(async ([type, title, summary, content, eventDate = '', eventTime = '', metaTitle = '', metaDescription = '']) => ({
+      slug: toSlug(title), type, title, summary, content: await cleanEditorHtml(content),
       eventDate: eventDate || '', eventEndDate: '', eventTime, eventLocation: '',
       eventRegistrationUrl: '', metaTitle, metaDescription, featuredImage: '',
       published: true, createdAt, updatedAt: createdAt,
     })));
+    await posts.insertMany(cleanedSamples);
   } catch (error) {
     if (error.code !== 11000 && !error.writeErrors?.every(({ code }) => code === 11000)) throw error;
   }
@@ -617,8 +618,9 @@ app.delete('/api/admin/comments/:id', requireCsrf, asyncRoute(async (req, res) =
 app.post('/api/admin/posts', requireCsrf, asyncRoute(async (req, res) => {
   const parsed = postSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: validationMessage(parsed.error) });
-  const post = { ...parsed.data, content: cleanEditorHtml(parsed.data.content) };
-  if (!post.content) return res.status(400).json({ error: 'Add some article content before saving.' });
+  const content = await cleanEditorHtml(parsed.data.content);
+  if (!content) return res.status(400).json({ error: 'Add some article content before saving.' });
+  const post = { ...parsed.data, content };
   const database = await db(req);
   const baseSlug = toSlug(post.title) || `post-${Date.now()}`;
   let slug = baseSlug;
@@ -636,8 +638,9 @@ app.put('/api/admin/posts/:id', requireCsrf, asyncRoute(async (req, res) => {
   const parsed = postSchema.safeParse(req.body);
   if (!id) return res.status(400).json({ error: 'Choose a valid post.' });
   if (!parsed.success) return res.status(400).json({ error: validationMessage(parsed.error) });
-  const post = { ...parsed.data, content: cleanEditorHtml(parsed.data.content) };
-  if (!post.content) return res.status(400).json({ error: 'Add some article content before saving.' });
+  const content = await cleanEditorHtml(parsed.data.content);
+  if (!content) return res.status(400).json({ error: 'Add some article content before saving.' });
+  const post = { ...parsed.data, content };
   const database = await db(req);
   if (!await database.collection('posts').findOne({ _id: id }, { projection: { _id: 1 } })) {
     return res.status(404).json({ error: 'That post could not be found.' });

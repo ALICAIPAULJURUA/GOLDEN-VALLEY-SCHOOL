@@ -608,17 +608,18 @@ app.delete('/api/admin/comments/:id', requireAdminSession, requireCsrf, (req, re
   res.status(204).end();
 });
 
-app.post('/api/admin/posts', requireAdminSession, requireCsrf, (req, res) => {
+app.post('/api/admin/posts', requireAdminSession, requireCsrf, async (req, res) => {
   const parsed = postSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: validationMessage(parsed.error) });
     return;
   }
-  const post = { ...parsed.data, content: cleanEditorHtml(parsed.data.content) };
-  if (!post.content) {
+  const content = await cleanEditorHtml(parsed.data.content);
+  if (!content) {
     res.status(400).json({ error: 'Add some article content before saving.' });
     return;
   }
+  const post = { ...parsed.data, content };
   try {
     const baseSlug = toSlug(post.title) || `post-${Date.now()}`;
     let slug = baseSlug;
@@ -654,11 +655,12 @@ app.put('/api/admin/posts/:id', requireAdminSession, requireCsrf, (req, res, nex
     res.status(400).json({ error: validationMessage(parsed.error) });
     return;
   }
-  const post = { ...parsed.data, content: cleanEditorHtml(parsed.data.content) };
-  if (!post.content) {
+  const content = await cleanEditorHtml(parsed.data.content);
+  if (!content) {
     res.status(400).json({ error: 'Add some article content before saving.' });
     return;
   }
+  const post = { ...parsed.data, content };
   try {
     const existing = get('SELECT id FROM posts WHERE id = ?', [id]);
     if (!existing) {

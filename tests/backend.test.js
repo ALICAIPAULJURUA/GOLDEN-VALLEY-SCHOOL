@@ -27,8 +27,8 @@ test('admin greeting follows Uganda time across morning, afternoon, and evening'
   assert.equal(schoolGreeting(new Date('2026-10-16T01:59:00.000Z')), 'Good evening');
 });
 
-test('published rich text drops executable markup and unsafe link protocols', () => {
-  const clean = cleanEditorHtml(
+test('published rich text drops executable markup and unsafe link protocols', async () => {
+  const clean = await cleanEditorHtml(
     '<p onclick="alert(1)">Welcome <strong>families</strong></p><script>alert(1)</script><a href="javascript:alert(2)">bad link</a>',
   );
 
@@ -36,8 +36,8 @@ test('published rich text drops executable markup and unsafe link protocols', ()
   assert.doesNotMatch(clean, /onclick|<script|javascript:/i);
 });
 
-test('rich text retains safe media embeds, images, and tables while removing unsafe markup', () => {
-  const clean = cleanEditorHtml(
+test('rich text retains safe media embeds, images, and tables while removing unsafe markup', async () => {
+  const clean = await cleanEditorHtml(
     '<p>News</p><img src="/uploads/school.png" alt="School" onerror="alert(1)"><table><tr><td>Term</td></tr></table><iframe src="https://www.youtube.com/embed/example"></iframe><iframe src="https://attacker.example/video"></iframe>',
   );
   assert.match(clean, /<img src="\/uploads\/school\.png" alt="School"\s*\/?>/);
