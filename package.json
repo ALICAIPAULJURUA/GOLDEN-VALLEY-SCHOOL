@@ -10,10 +10,10 @@
     "start:mongo": "node server/mongo-local.js",
     "admin:create": "node scripts/create-admin.js",
     "admin:mongo:create": "node scripts/create-mongo-admin.js",
-    "test": "node --test tests"
+    "test": "node --test"
   },
   "engines": {
-    "node": ">=22.12"
+    "node": "22.x"
   },
   "dependencies": {
     "@tinymce/tinymce-react": "^6.3.0",
