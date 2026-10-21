@@ -53,6 +53,12 @@ article comments, and likes. GridFS uses its standard `uploads.files` and
 `uploads.chunks` collections. It creates unique indexes for admin usernames,
 post slugs, and visitor/article likes.
 
+If `/api/*` requests show the website page or return HTTP 405, check that the
+latest Vercel deployment includes the `api/index.js` function and the API
+rewrites in `vercel.json`. A successful static-site build alone does not
+verify that the serverless API can initialize; inspect Vercel runtime logs if
+API requests return `FUNCTION_INVOCATION_FAILED`.
+
 ## Local development
 
 ```powershell
