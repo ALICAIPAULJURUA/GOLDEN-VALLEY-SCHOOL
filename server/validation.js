@@ -127,6 +127,22 @@ export const accountPasswordSchema = z.object({
   newPassword: z.string().min(14).max(200),
 });
 
+const colorValue = z.string().regex(/^#[\da-f]{6}$/i);
+const siteColorsSchema = z.object({
+  primary: colorValue,
+  secondary: colorValue,
+  accent: colorValue,
+  surface: colorValue,
+  primaryDeep: colorValue.optional(),
+  background: colorValue.optional(),
+  foreground: colorValue.optional(),
+  muted: colorValue.optional(),
+  border: colorValue.optional(),
+  success: colorValue.optional(),
+  destructive: colorValue.optional(),
+  highlight: colorValue.optional(),
+});
+
 export const settingsSchema = z.object({
   schoolName: cleanText(120),
   tagline: cleanText(160),
@@ -137,20 +153,10 @@ export const settingsSchema = z.object({
   faviconUrl: optionalMediaPath,
   appleTouchIconUrl: optionalMediaPath,
   siteImages: siteImagesSchema,
-  siteColors: z.object({
-    primary: z.string().regex(/^#[\da-f]{6}$/i),
-    secondary: z.string().regex(/^#[\da-f]{6}$/i),
-    accent: z.string().regex(/^#[\da-f]{6}$/i),
-    surface: z.string().regex(/^#[\da-f]{6}$/i),
-  }).default(DEFAULT_SITE_COLORS),
+  siteColors: siteColorsSchema.default(DEFAULT_SITE_COLORS),
   savedColorPalettes: z.array(z.object({
     name: cleanText(40),
-    colors: z.object({
-      primary: z.string().regex(/^#[\da-f]{6}$/i),
-      secondary: z.string().regex(/^#[\da-f]{6}$/i),
-      accent: z.string().regex(/^#[\da-f]{6}$/i),
-      surface: z.string().regex(/^#[\da-f]{6}$/i),
-    }),
+    colors: siteColorsSchema,
   })).min(1).default(DEFAULT_COLOR_PALETTES).superRefine((palettes, context) => {
     const names = palettes.map(({ name }) => name.toLowerCase());
     if (new Set(names).size !== names.length) {

@@ -16,7 +16,7 @@ import {
   settingsSchema,
   staffSchema,
 } from '../server/validation.js';
-import { DEFAULT_SITE_COLORS, DEFAULT_SITE_IMAGES, fillWhatsAppTemplate } from '../site-theme.js';
+import { DEFAULT_SITE_COLORS, DEFAULT_SITE_IMAGES, LEGACY_SITE_COLORS, fillWhatsAppTemplate } from '../site-theme.js';
 
 test('admin greeting follows Uganda time across morning, afternoon, and evening', () => {
   assert.equal(schoolGreeting(new Date('2026-10-16T02:00:00.000Z')), 'Good morning');
@@ -156,8 +156,11 @@ test('site settings validate saved color palettes and reusable WhatsApp template
   const result = settingsSchema.safeParse({
     schoolName: 'Golden Valley', tagline: 'Growing together', phone: '0777 627 421',
     email: 'school@example.test', whatsappNumber: '256777627421', applicationsOpen: true,
-    siteColors: { primary: '#07594f', secondary: '#ed7754', accent: '#13887e', surface: '#fff8e9' },
-    savedColorPalettes: [{ name: 'Golden Valley default', colors: DEFAULT_SITE_COLORS }],
+    siteColors: { ...DEFAULT_SITE_COLORS },
+    savedColorPalettes: [
+      { name: 'Golden Valley maroon', colors: DEFAULT_SITE_COLORS },
+      { name: 'Golden Valley legacy', colors: LEGACY_SITE_COLORS },
+    ],
     whatsappWelcomeMessage: 'Hello school!',
     whatsappContactTemplate: 'Hello {{name}}: {{message}}',
   });

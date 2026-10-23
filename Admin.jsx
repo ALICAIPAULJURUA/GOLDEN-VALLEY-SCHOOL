@@ -160,7 +160,7 @@ function PostEditor({ post, onSave, onCancel, busy, error, csrfToken, media, onU
             progress(100);
             return imageUrl;
           },
-          content_style: 'body { font-family: "DM Sans", sans-serif; font-size: 16px; color: #183f39; line-height: 1.75; }',
+          content_style: 'body { font-family: "DM Sans", sans-serif; font-size: 16px; color: #2E2A2D; line-height: 1.75; }',
         }}
       />}
     </div>

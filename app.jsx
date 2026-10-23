@@ -62,7 +62,7 @@ function ToastViewport({ colors, theme }) {
     return () => window.removeEventListener('gv-toast', receiveToast);
   }, []);
 
-  return <div className="gv-toast-viewport" data-theme={theme} style={siteColorVariables(colors)} aria-live="polite" aria-relevant="additions">
+  return <div className="gv-toast-viewport" data-theme={theme} style={siteColorVariables(colors, theme)} aria-live="polite" aria-relevant="additions">
     {toasts.map((toast) => <div className={`gv-toast is-${toast.type}`} key={toast.id} role={toast.type === 'error' ? 'alert' : 'status'}>
       <span className="gv-toast-icon" aria-hidden="true">{toast.type === 'error' ? '!' : '✓'}</span>
       <p>{toast.message}</p>
@@ -395,7 +395,7 @@ function AdmissionPage({ content, theme }) {
     </div></section>
 
     // This is the official online application form. If you are maintaining this website you can add more features here
-    {formOpen && createPortal(<div className="gv-admission-modal-backdrop" data-gv-overlay="" data-theme={theme} style={siteColorVariables(settings.siteColors)} onMouseDown={(event) => { if (event.target === event.currentTarget && !busy) setFormOpen(false); }}>
+    {formOpen && createPortal(<div className="gv-admission-modal-backdrop" data-gv-overlay="" data-theme={theme} style={siteColorVariables(settings.siteColors, theme)} onMouseDown={(event) => { if (event.target === event.currentTarget && !busy) setFormOpen(false); }}>
       <section className="gv-admission-modal" role="dialog" aria-modal="true" aria-labelledby="gv-admission-modal-title">
         <button type="button" className="gv-admission-modal-close" aria-label="Close application form" autoFocus onClick={() => setFormOpen(false)} disabled={busy}>×</button>
         {reference ? <div className="gv-admission-success" role="status"><span>✿</span><p className="gv-eyebrow">APPLICATION RECEIVED</p><h2 id="gv-admission-modal-title">Thank you for saying hello.</h2><p>Your application reference is <strong>{reference}</strong>. The school office will contact you using the details you provided.</p><a className="gv-text-link" href={whatsappUrl(`Hello, I submitted admissions application ${reference}.`, settings.whatsappNumber)} target="_blank" rel="noreferrer">Continue on WhatsApp <Arrow /></a><button className="gv-button" type="button" onClick={() => setFormOpen(false)}>Done</button></div> :
@@ -742,7 +742,7 @@ function App() {
   else page = <main className="gv-not-found"><p className="gv-eyebrow">Oops, wrong turn</p><h1>We can’t find<br /><em>that page.</em></h1><Button to="home">Back to home</Button></main>;
 
   return <>
-    <div className="gv-app-shell" data-theme={theme} style={siteColorVariables(siteSettings.siteColors)}><Header active={route.startsWith('news/') ? 'news' : route} menuOpen={menuOpen} setMenuOpen={setMenuOpen} theme={theme} onThemeToggle={() => setTheme((value) => value === 'light' ? 'dark' : 'light')} /><main key={route} id="gv-main-content" data-theme={theme} aria-busy={navigating}>{page}</main><Footer /></div>
+    <div className="gv-app-shell" data-theme={theme} style={siteColorVariables(siteSettings.siteColors, theme)}><Header active={route.startsWith('news/') ? 'news' : route} menuOpen={menuOpen} setMenuOpen={setMenuOpen} theme={theme} onThemeToggle={() => setTheme((value) => value === 'light' ? 'dark' : 'light')} /><main key={route} id="gv-main-content" data-theme={theme} aria-busy={navigating}>{page}</main><Footer /></div>
     <ToastViewport colors={siteSettings.siteColors} theme={theme} />
     {navigating && <LoadingSpinner message="Opening this page…" overlay />}
     {route !== 'admin' && <WhatsAppFloat />}
