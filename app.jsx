@@ -135,7 +135,7 @@ function useSiteSettings() {
     schoolName: 'Golden Valley School',
     tagline: 'Kindergarten · Day Care · Primary',
     phone: '0777 627 421',
-    email: 'i.abiriga@muni.ac.ug',
+    email: 'goldenvalleyschool190@gmail.com',
     whatsappNumber: '256777627421',
     applicationsOpen: true,
     faviconUrl: '',
@@ -393,6 +393,8 @@ function AdmissionPage({ content, theme }) {
           : <a className="gv-button" href={whatsappUrl('Hello, I would like to ask about admissions at Golden Valley School.', settings.whatsappNumber)} target="_blank" rel="noreferrer">Contact the school <Arrow /></a>}
       </aside>
     </div></section>
+
+    // This is the official online application form. If you are maintaining this website you can add more features here
     {formOpen && createPortal(<div className="gv-admission-modal-backdrop" data-gv-overlay="" data-theme={theme} style={siteColorVariables(settings.siteColors)} onMouseDown={(event) => { if (event.target === event.currentTarget && !busy) setFormOpen(false); }}>
       <section className="gv-admission-modal" role="dialog" aria-modal="true" aria-labelledby="gv-admission-modal-title">
         <button type="button" className="gv-admission-modal-close" aria-label="Close application form" autoFocus onClick={() => setFormOpen(false)} disabled={busy}>×</button>
@@ -684,7 +686,7 @@ function Footer() {
 function WhatsAppFloat() {
   const settings = useSiteSettings();
   return <a className="gv-whatsapp-float" href={whatsappUrl(settings.whatsappWelcomeMessage, settings.whatsappNumber)} target="_blank" rel="noreferrer" aria-label="Chat with Golden Valley School on WhatsApp">
-    <span className="gv-whatsapp-label">Chat with us</span>
+    <span className="gv-whatsapp-label">WhatsApp Us</span>
     <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 .7A15.2 15.2 0 0 0 2.9 23.6L1 31l7.6-2A15.2 15.2 0 1 0 16 .7Zm0 27.7a12.5 12.5 0 0 1-6.4-1.8l-.5-.3-4.5 1.2 1.2-4.4-.3-.5A12.5 12.5 0 1 1 16 28.4Zm6.9-9.3c-.4-.2-2.1-1-2.5-1.1-.3-.1-.6-.2-.8.2-.3.4-.9 1.1-1.1 1.3-.2.3-.4.3-.8.1-.4-.2-1.5-.6-2.8-1.8-1-.9-1.7-2.1-1.9-2.5-.2-.4 0-.6.2-.8l.6-.7c.2-.2.2-.4.4-.6.1-.2.1-.4 0-.6-.1-.2-.8-2-1.1-2.7-.3-.7-.6-.6-.8-.6h-.7c-.2 0-.6.1-.9.4-.3.4-1.2 1.2-1.2 3s1.2 3.4 1.4 3.6c.2.2 2.4 3.7 5.8 5.1.8.4 1.5.6 2 .7.8.3 1.6.2 2.2.1.7-.1 2.1-.9 2.4-1.7.3-.8.3-1.5.2-1.7-.1-.2-.4-.3-.8-.5Z" /></svg>
   </a>;
 }
